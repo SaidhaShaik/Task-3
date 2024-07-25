@@ -1,0 +1,45 @@
+import pandas as pd
+from sklearn.model_selection import train_test_split, GridSearchCV
+from sklearn.ensemble import RandomForestClassifier
+from sklearn.metrics import accuracy_score, classification_report
+from google.colab import files
+uploaded = files.upload()
+data = pd.read_csv('decison_datset.csv')
+data
+missing_values = data.isnull().sum()
+missing_values
+data.fillna(data.mean(), inplace=True)
+data = pd.get_dummies(data, columns=['Sex', 'Embarked'], drop_first=True)
+X = data.drop('Survived', axis=1)
+y = data['Survived']
+X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
+rf = RandomForestClassifier(n_estimators=3, random_state=42)
+rf.fit(X_train, y_train)
+y_pred = rf.predict(X_test)
+accuracy = accuracy_score(y_test, y_pred)
+print(f"Accuracy: {accuracy:.2f}")
+print("\nClassification Report:\n", classification_report(y_test, y_pred))
+# Hyperparameter tuning using grid search
+param_grid = {
+    'n_estimators': [10, 50, 100],
+    'max_depth': [None, 10, 20],
+    'min_samples_split': [2, 5, 10],
+    'min_samples_leaf': [1, 2, 4]
+}
+
+grid_search = GridSearchCV(estimator=RandomForestClassifier(random_state=42),
+                           param_grid=param_grid,
+                           scoring='accuracy',
+                           cv=5)
+
+grid_search.fit(X_train, y_train)
+print("\nBest Hyperparameters:")
+print(grid_search.best_params_)
+# Apply the optimized Random Forest model
+optimized_rf = grid_search.best_estimator_
+y_pred_optimized = optimized_rf.predict(X_test)
+# Evaluate the accuracy of the optimized model
+accuracy_optimized = accuracy_score(y_test, y_pred_optimized)
+print(f"\nOptimized Model Accuracy: {accuracy_optimized:.2f}")
+# Display classification report for the optimized model
+print("\nOptimized Model Classification Report:\n", classification_report(y_test, y_pred_optimized))
